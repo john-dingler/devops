@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New Tab — Dingo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:       #0f0f1a;
+      --card:     #13132a;
+      --border:   rgba(255,255,255,0.07);
+      --accent:   #c8541a;
+      --accent-l: #e07030;
+      --text:     #eeeef5;
+      --muted:    #9090b0;
+      --dim:      #55556a;
+    }
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--bg); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex; flex-direction: column; align-items: center; overflow-x: hidden;
+    }
+
+    header { margin-top: 52px; text-align: center; padding: 0 20px; }
+
+    .mascot-wrap {
+      display: flex; align-items: center; justify-content: center; gap: 14px;
+      margin-bottom: 6px;
+    }
+    .mascot-wrap img { width: 64px; height: 64px; object-fit: contain; }
+    h1 {
+      font-size: 42px; font-weight: 900; text-transform: uppercase;
+      letter-spacing: 4px; color: var(--accent-l);
+      text-shadow: 0 0 30px rgba(200,84,26,0.4);
+    }
+    .tagline { font-size: 13px; color: var(--dim); margin-top: 6px; letter-spacing: 1px; }
+    .clock { font-size: 44px; font-weight: 200; margin-top: 16px; letter-spacing: 3px; color: var(--text); }
+    .date-str { font-size: 13px; color: var(--muted); margin-top: 4px; }
+    .greeting { font-size: 14px; color: var(--muted); margin-top: 2px; }
+
+    /* Search */
+    .search-wrap { margin-top: 36px; width: 100%; max-width: 560px; padding: 0 20px; }
+    .search-box {
+      width: 100%; display: flex; align-items: center;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 28px; padding: 0 16px; gap: 10px; height: 52px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .search-box:focus-within {
+      border-color: rgba(200,84,26,0.6);
+      box-shadow: 0 0 0 3px rgba(200,84,26,0.15);
+    }
+    .search-icon { font-size: 18px; color: var(--dim); flex-shrink: 0; }
+    .search-input {
+      flex: 1; background: none; border: none; outline: none;
+      color: var(--text); font-size: 16px; font-family: inherit;
+    }
+    .search-input::placeholder { color: var(--dim); }
+
+    /* Quick links */
+    .section { width: 100%; max-width: 700px; padding: 0 20px; margin-top: 36px; }
+    .section-title {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
+      color: var(--dim); margin-bottom: 12px;
+    }
+    .quick-links { display: flex; flex-wrap: wrap; gap: 10px; }
+    .quick-link {
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      width: 68px; cursor: pointer; text-decoration: none; color: var(--text);
+      border-radius: 10px; padding: 10px 6px; transition: background 0.15s;
+    }
+    .quick-link:hover { background: var(--card); }
+    .quick-link .ql-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: var(--card); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 700;
+    }
+    .quick-link .ql-label {
+      font-size: 11px; color: var(--muted); text-align: center;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%;
+    }
+
+    /* History */
+    .history-list { display: flex; flex-direction: column; gap: 2px; }
+    .history-item {
+      display: flex; align-items: center; gap: 10px; padding: 7px 10px;
+      border-radius: 8px; cursor: pointer; transition: background 0.12s;
+      color: var(--text);
+    }
+    .history-item:hover { background: var(--card); }
+    .history-item .hi-icon { font-size: 13px; width: 16px; flex-shrink: 0; }
+    .history-item .hi-title { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .history-item .hi-url  { font-size: 11px; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
+    .history-item .hi-time { font-size: 11px; color: var(--dim); white-space: nowrap; flex-shrink: 0; }
+
+    footer { margin-top: auto; padding: 20px; font-size: 11px; color: var(--dim); text-align: center; }
+    footer span { color: var(--accent); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="mascot-wrap">
+    <img src="../assets/dingo-mascot.svg" alt="Dingo" />
+    <h1>Dingo</h1>
+  </div>
+  <div class="tagline">FAST · PRIVATE · YOURS</div>
+  <div class="clock" id="clock">00:00</div>
+  <div class="date-str" id="date-str"></div>
+  <div class="greeting" id="greeting"></div>
+</header>
+
+<div class="search-wrap">
+  <div class="search-box">
+    <span class="search-icon">🔍</span>
+    <input class="search-input" id="search-input" type="text"
+           placeholder="Search or enter an address…"
+           autofocus autocomplete="off" spellcheck="false" />
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">QUICK LINKS</div>
+  <div class="quick-links">
+    <a class="quick-link" href="https://google.com">
+      <div class="ql-icon" style="color:#4285F4">G</div><span class="ql-label">Google</span>
+    </a>
+    <a class="quick-link" href="https://github.com">
+      <div class="ql-icon">🐙</div><span class="ql-label">GitHub</span>
+    </a>
+    <a class="quick-link" href="https://youtube.com">
+      <div class="ql-icon" style="color:#FF0000">▶</div><span class="ql-label">YouTube</span>
+    </a>
+    <a class="quick-link" href="https://news.ycombinator.com">
+      <div class="ql-icon" style="color:#FF6600">Y</div><span class="ql-label">HN</span>
+    </a>
+    <a class="quick-link" href="https://wikipedia.org">
+      <div class="ql-icon">W</div><span class="ql-label">Wikipedia</span>
+    </a>
+    <a class="quick-link" href="https://reddit.com">
+      <div class="ql-icon">👾</div><span class="ql-label">Reddit</span>
+    </a>
+    <a class="quick-link" href="https://twitter.com">
+      <div class="ql-icon">𝕏</div><span class="ql-label">X</span>
+    </a>
+    <a class="quick-link" href="https://stackoverflow.com">
+      <div class="ql-icon" style="color:#F48024">SO</div><span class="ql-label">Stack</span>
+    </a>
+  </div>
+</div>
+
+<div class="section" id="history-section" style="display:none">
+  <div class="section-title">RECENTLY VISITED</div>
+  <div class="history-list" id="history-list"></div>
+</div>
+
+<footer>Dingo Browser &nbsp;·&nbsp; <span>Rock on 🎸</span></footer>
+
+<script>
+  function updateClock() {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    document.getElementById('clock').textContent = `${hh}:${mm}`;
+
+    const days   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    document.getElementById('date-str').textContent =
+      `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
+
+    const hr = now.getHours();
+    document.getElementById('greeting').textContent =
+      hr < 12 ? 'Good morning 🌅' : hr < 17 ? 'Good afternoon ☀️' : 'Good evening 🌙';
+  }
+  updateClock();
+  setInterval(updateClock, 10000);
+
+  // Search
+  document.getElementById('search-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const val = e.target.value.trim();
+      if (!val) return;
+      try {
+        const u = new URL(val);
+        window.location.href = u.href;
+      } catch {
+        const hasDot = /^[a-zA-Z0-9]([a-zA-Z0-9-]*\.)+[a-zA-Z]{2,}/.test(val);
+        window.location.href = hasDot
+          ? `https://${val}`
+          : `https://www.google.com/search?q=${encodeURIComponent(val)}`;
+      }
+    }
+  });
+
+  // Quick links — allow normal navigation
+  document.querySelectorAll('.quick-link').forEach(a => {
+    a.addEventListener('click', e => { e.preventDefault(); window.location.href = a.href; });
+  });
+
+  // Recent history
+  function escHtml(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function timeAgo(ts) {
+    const d = Date.now() - ts;
+    if (d < 60000)    return 'just now';
+    if (d < 3600000)  return `${Math.floor(d/60000)}m ago`;
+    if (d < 86400000) return `${Math.floor(d/3600000)}h ago`;
+    return `${Math.floor(d/86400000)}d ago`;
+  }
+
+  async function loadHistory() {
+    if (!window.dingo) return;
+    try {
+      const hist = await window.dingo.invoke('history:get', {});
+      if (!hist || hist.length === 0) return;
+      document.getElementById('history-section').style.display = '';
+      const list = document.getElementById('history-list');
+      hist.slice(0, 6).forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'history-item';
+        row.innerHTML = `
+          <span class="hi-icon">🕐</span>
+          <span class="hi-title">${escHtml(item.title || item.url)}</span>
+          <span class="hi-url">${escHtml(item.url)}</span>
+          <span class="hi-time">${timeAgo(item.timestamp)}</span>
+        `;
+        row.addEventListener('click', () => { window.location.href = item.url; });
+        list.appendChild(row);
+      });
+    } catch { /* ignore */ }
+  }
+  loadHistory();
+</script>
+</body>
+</html>

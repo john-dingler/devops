@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings — Dingo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f0f1a; --card: #13132a; --border: rgba(255,255,255,0.08);
+      --accent: #c8541a; --accent-l: #e07030;
+      --text: #eeeef5; --muted: #9090b0; --dim: #55556a;
+      --success: #4caf81; --danger: #e94560;
+    }
+    html, body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-height: 100vh; }
+    body { max-width: 680px; margin: 0 auto; padding: 40px 24px; }
+
+    .page-header {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 36px;
+    }
+    .page-header img { width: 36px; height: 36px; object-fit: contain; }
+    h1 { font-size: 22px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; color: var(--accent-l); }
+
+    .section { margin-bottom: 32px; }
+    .section-title {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.8px;
+      color: var(--dim); text-transform: uppercase; margin-bottom: 12px;
+      padding-bottom: 6px; border-bottom: 1px solid var(--border);
+    }
+
+    .setting-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 0; border-bottom: 1px solid var(--border);
+      gap: 16px;
+    }
+    .setting-row:last-child { border-bottom: none; }
+    .setting-label { font-size: 13px; color: var(--text); }
+    .setting-desc  { font-size: 11px; color: var(--dim); margin-top: 2px; }
+
+    input[type="text"], select {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text); font-size: 12px;
+      font-family: inherit; padding: 7px 10px; outline: none;
+      min-width: 200px;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus, select:focus { border-color: rgba(200,84,26,0.6); }
+    select option { background: #1a1a30; }
+
+    .toggle-wrap { display: flex; align-items: center; gap: 8px; }
+    .toggle {
+      position: relative; width: 40px; height: 22px; flex-shrink: 0;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; inset: 0;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 11px; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .toggle-slider::after {
+      content: ''; position: absolute;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: var(--muted); top: 2px; left: 2px;
+      transition: left 0.2s, background 0.2s;
+    }
+    .toggle input:checked + .toggle-slider { background: var(--accent); border-color: var(--accent); }
+    .toggle input:checked + .toggle-slider::after { left: 20px; background: #fff; }
+
+    .btn {
+      padding: 8px 16px; border: none; border-radius: 6px;
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-primary  { background: var(--accent); color: #fff; }
+    .btn-danger   { background: var(--danger); color: #fff; }
+    .btn-secondary { background: var(--card); color: var(--muted); border: 1px solid var(--border); }
+
+    .status-msg {
+      font-size: 12px; color: var(--success);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .status-msg.visible { opacity: 1; }
+
+    .about-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px; display: flex;
+      align-items: center; gap: 16px;
+    }
+    .about-card img { width: 56px; height: 56px; object-fit: contain; }
+    .about-info h2 { font-size: 18px; font-weight: 900; color: var(--accent-l); text-transform: uppercase; letter-spacing: 2px; }
+    .about-info p  { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .about-info .version { font-size: 11px; color: var(--dim); margin-top: 6px; }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <img src="../assets/dingo-mascot.svg" alt="Dingo" />
+  <h1>Settings</h1>
+</div>
+
+<!-- Appearance -->
+<div class="section">
+  <div class="section-title">Appearance</div>
+
+  <div class="setting-row">
+    <div>
+      <div class="setting-label">Theme</div>
+      <div class="setting-desc">Choose the browser colour theme</div>
+    </div>
+    <select id="theme-select">
+      <option value="dark">Dark (default)</option>
+      <option value="light">Light</option>
+      <option value="system">Follow system</option>
+    </select>
+  </div>
+</div>
+
+<!-- Startup & Homepage -->
+<div class="section">
+  <div class="section-title">Startup</div>
+
+  <div class="setting-row">
+    <div>
+      <div class="setting-label">Homepage</div>
+      <div class="setting-desc">Page opened in new tabs</div>
+    </div>
+    <input type="text" id="homepage-input" placeholder="dingo://newtab" style="min-width:240px;" />
+  </div>
+
+  <div class="setting-row">
+    <div>
+      <div class="setting-label">Restore previous session</div>
+      <div class="setting-desc">Reopen tabs from last session on startup</div>
+    </div>
+    <label class="toggle">
+      <input type="checkbox" id="restore-session-toggle" checked />
+      <div class="toggle-slider"></div>
+    </label>
+  </div>
+</div>
+
+<!-- Search Engine -->
+<div class="section">
+  <div class="section-title">Search</div>
+
+  <div class="setting-row">
+    <div>
+      <div class="setting-label">Default search engine</div>
+      <div class="setting-desc">Used when you type a non-URL in the address bar</div>
+    </div>
+    <select id="search-engine-select">
+      <option value="https://www.google.com/search?q=">Google</option>
+      <option value="https://search.brave.com/search?q=">Brave</option>
+      <option value="https://duckduckgo.com/?q=">DuckDuckGo</option>
+      <option value="https://www.bing.com/search?q=">Bing</option>
+      <option value="https://search.yahoo.com/search?p=">Yahoo</option>
+    </select>
+  </div>
+</div>
+
+<!-- Privacy -->
+<div class="section">
+  <div class="section-title">Privacy</div>
+
+  <div class="setting-row">
+    <div>
+      <div class="setting-label">Block ads &amp; trackers</div>
+      <div class="setting-desc">Block known ad/tracking domains</div>
+    </div>
+    <label class="toggle">
+      <input type="checkbox" id="adblock-toggle" checked />
+      <div class="toggle-slider"></div>
+    </label>
+  </div>
+
+  <div class="setting-row">
+    <div>
+      <div class="setting-label">Clear browsing data</div>
+      <div class="setting-desc">Delete history, cookies, and cache</div>
+    </div>
+    <button class="btn btn-danger" id="btn-clear-data">Clear Now</button>
+  </div>
+</div>
+
+<!-- Save button -->
+<div style="display:flex;align-items:center;gap:12px;margin-top:8px;">
+  <button class="btn btn-primary" id="btn-save">Save Settings</button>
+  <span class="status-msg" id="save-status">✓ Saved</span>
+</div>
+
+<!-- About -->
+<div class="section" style="margin-top:40px;">
+  <div class="section-title">About</div>
+  <div class="about-card">
+    <img src="../assets/dingo-mascot.svg" alt="Dingo mascot" />
+    <div class="about-info">
+      <h2>Dingo</h2>
+      <p>A custom Chromium-based browser built with Electron.</p>
+      <div class="version">Version 1.0.0 &nbsp;·&nbsp; Electron + Chromium &nbsp;·&nbsp; Rock on 🎸</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const d = window.dingo;
+  const SEARCH_ENGINES = [
+    'https://www.google.com/search?q=',
+    'https://search.brave.com/search?q=',
+    'https://duckduckgo.com/?q=',
+    'https://www.bing.com/search?q=',
+    'https://search.yahoo.com/search?p=',
+  ];
+
+  async function load() {
+    if (!d) return;
+    const homepage     = await d.invoke('store:get', { key: 'homepage',     defaultValue: 'dingo://newtab' });
+    const searchEngine = await d.invoke('store:get', { key: 'searchEngine', defaultValue: SEARCH_ENGINES[0] });
+    const adblock      = await d.invoke('store:get', { key: 'adblock',      defaultValue: true });
+    const restoreSession = await d.invoke('store:get', { key: 'restoreSession', defaultValue: true });
+
+    document.getElementById('homepage-input').value = homepage;
+
+    const seSelect = document.getElementById('search-engine-select');
+    const idx = SEARCH_ENGINES.indexOf(searchEngine);
+    if (idx >= 0) seSelect.selectedIndex = idx;
+
+    document.getElementById('adblock-toggle').checked = adblock;
+    document.getElementById('restore-session-toggle').checked = restoreSession;
+  }
+
+  async function save() {
+    if (!d) return;
+    const homepage     = document.getElementById('homepage-input').value.trim() || 'dingo://newtab';
+    const searchEngine = SEARCH_ENGINES[document.getElementById('search-engine-select').selectedIndex] || SEARCH_ENGINES[0];
+    const adblock      = document.getElementById('adblock-toggle').checked;
+    const restoreSession = document.getElementById('restore-session-toggle').checked;
+
+    await d.invoke('store:set', { key: 'homepage',        value: homepage });
+    await d.invoke('store:set', { key: 'searchEngine',    value: searchEngine });
+    await d.invoke('store:set', { key: 'adblock',         value: adblock });
+    await d.invoke('store:set', { key: 'restoreSession',  value: restoreSession });
+
+    const msg = document.getElementById('save-status');
+    msg.classList.add('visible');
+    setTimeout(() => msg.classList.remove('visible'), 2000);
+  }
+
+  document.getElementById('btn-save').addEventListener('click', save);
+
+  document.getElementById('btn-clear-data').addEventListener('click', async () => {
+    if (!d) return;
+    if (!confirm('This will clear your browsing history, cookies, and cached files. Continue?')) return;
+    await d.invoke('history:clear', {});
+    await d.invoke('store:set', { key: 'session', value: [] });
+    alert('Browsing data cleared.');
+  });
+
+  load();
+</script>
+</body>
+</html>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Downloads — Dingo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f0f1a; --card: #13132a; --border: rgba(255,255,255,0.08);
+      --accent: #c8541a; --accent-l: #e07030;
+      --text: #eeeef5; --muted: #9090b0; --dim: #55556a;
+      --success: #4caf81; --danger: #e94560;
+    }
+    html, body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-height: 100vh; }
+    body { max-width: 780px; margin: 0 auto; padding: 40px 24px; }
+
+    .page-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+    .page-header img { width: 32px; height: 32px; object-fit: contain; }
+    h1 { font-size: 20px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; color: var(--accent-l); }
+
+    .dl-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .dl-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 16px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .dl-icon { font-size: 24px; flex-shrink: 0; }
+    .dl-info { flex: 1; overflow: hidden; }
+    .dl-filename { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dl-url      { font-size: 11px; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+    .dl-meta     { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+    .dl-progress { width: 120px; flex-shrink: 0; }
+    .dl-bar      { height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; margin-bottom: 4px; }
+    .dl-fill     { height: 100%; background: var(--accent-l); border-radius: 2px; }
+    .dl-pct      { font-size: 11px; color: var(--muted); text-align: right; }
+
+    .dl-state-badge {
+      font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 12px;
+      flex-shrink: 0; white-space: nowrap;
+    }
+    .dl-state-badge.completed  { background: rgba(76,175,129,0.15); color: var(--success); }
+    .dl-state-badge.cancelled  { background: rgba(233,69,96,0.15);  color: var(--danger); }
+    .dl-state-badge.interrupted { background: rgba(233,69,96,0.15); color: var(--danger); }
+
+    .dl-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .dl-btn {
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      border-radius: 6px; font-size: 11px; cursor: pointer;
+      padding: 4px 10px; transition: background 0.12s, color 0.12s, border-color 0.12s;
+    }
+    .dl-btn:hover { background: var(--bg); color: var(--text); border-color: var(--accent); }
+
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--dim); }
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <img src="../assets/dingo-mascot.svg" alt="Dingo" />
+  <h1>Downloads</h1>
+</div>
+
+<div class="dl-list" id="dl-list"></div>
+<div class="empty-state hidden" id="empty-state">
+  <div class="icon">⬇</div>
+  <p>No downloads yet</p>
+</div>
+
+<script>
+  const d = window.dingo;
+
+  function escHtml(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function formatSize(bytes) {
+    if (!bytes) return '';
+    if (bytes < 1024)       return `${bytes} B`;
+    if (bytes < 1048576)    return `${(bytes/1024).toFixed(1)} KB`;
+    if (bytes < 1073741824) return `${(bytes/1048576).toFixed(1)} MB`;
+    return `${(bytes/1073741824).toFixed(2)} GB`;
+  }
+  function timeAgo(ts) {
+    const diff = Date.now() - ts;
+    if (diff < 60000)    return 'just now';
+    if (diff < 3600000)  return `${Math.floor(diff/60000)}m ago`;
+    if (diff < 86400000) return `${Math.floor(diff/3600000)}h ago`;
+    return new Date(ts).toLocaleDateString();
+  }
+
+  function fileIcon(filename) {
+    const ext = (filename || '').split('.').pop().toLowerCase();
+    const map = { pdf: '📄', zip: '🗜', gz: '🗜', tar: '🗜', mp4: '🎬', mp3: '🎵',
+                  jpg: '🖼', jpeg: '🖼', png: '🖼', gif: '🖼', svg: '🖼',
+                  doc: '📝', docx: '📝', xls: '📊', xlsx: '📊', ppt: '📊',
+                  exe: '⚙', dmg: '💿', deb: '📦', apk: '📦', js: '⌨', ts: '⌨',
+                  json: '📋', csv: '📋', txt: '📄' };
+    return map[ext] || '📁';
+  }
+
+  function render(downloads) {
+    const list  = document.getElementById('dl-list');
+    const empty = document.getElementById('empty-state');
+    list.innerHTML = '';
+
+    if (!downloads || downloads.length === 0) {
+      empty.classList.remove('hidden');
+      return;
+    }
+    empty.classList.add('hidden');
+
+    downloads.forEach(dl => {
+      const card = document.createElement('div');
+      card.className = 'dl-card';
+
+      const stateHtml = ['completed', 'cancelled', 'interrupted'].includes(dl.state)
+        ? `<span class="dl-state-badge ${dl.state}">${dl.state}</span>` : '';
+
+      card.innerHTML = `
+        <div class="dl-icon">${fileIcon(dl.filename)}</div>
+        <div class="dl-info">
+          <div class="dl-filename">${escHtml(dl.filename)}</div>
+          <div class="dl-url">${escHtml(dl.url || '')}</div>
+          <div class="dl-meta">${formatSize(dl.totalBytes || 0)} · ${timeAgo(dl.timestamp)}</div>
+        </div>
+        ${stateHtml}
+        <div class="dl-actions">
+          ${dl.state === 'completed' ? `<button class="dl-btn" data-action="open">Open</button><button class="dl-btn" data-action="show">Show</button>` : ''}
+        </div>
+      `;
+
+      if (dl.state === 'completed' && d) {
+        card.querySelector('[data-action="open"]')?.addEventListener('click', () => {
+          d.invoke('downloads:open', { savePath: dl.savePath });
+        });
+        card.querySelector('[data-action="show"]')?.addEventListener('click', () => {
+          d.invoke('downloads:show', { savePath: dl.savePath });
+        });
+      }
+
+      list.appendChild(card);
+    });
+  }
+
+  async function init() {
+    if (!d) return;
+    const downloads = await d.invoke('downloads:get', {});
+    render(downloads);
+  }
+  init();
+</script>
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>History — Dingo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f0f1a; --card: #13132a; --border: rgba(255,255,255,0.08);
+      --accent: #c8541a; --accent-l: #e07030;
+      --text: #eeeef5; --muted: #9090b0; --dim: #55556a;
+      --danger: #e94560;
+    }
+    html, body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-height: 100vh; }
+    body { max-width: 780px; margin: 0 auto; padding: 40px 24px; }
+
+    .page-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+    .page-header img { width: 32px; height: 32px; object-fit: contain; }
+    h1 { font-size: 20px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; color: var(--accent-l); }
+
+    .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 24px; }
+    .search-input {
+      flex: 1; background: var(--card); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-size: 13px; font-family: inherit;
+      padding: 8px 12px; outline: none; max-width: 340px;
+      transition: border-color 0.2s;
+    }
+    .search-input:focus { border-color: rgba(200,84,26,0.6); }
+    .btn {
+      padding: 7px 14px; border: none; border-radius: 6px;
+      font-size: 12px; font-weight: 600; cursor: pointer; transition: opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .count { font-size: 12px; color: var(--dim); }
+
+    /* Day group */
+    .day-group { margin-bottom: 24px; }
+    .day-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.7px;
+      color: var(--dim); text-transform: uppercase;
+      padding-bottom: 6px; border-bottom: 1px solid var(--border);
+      margin-bottom: 6px;
+    }
+
+    .hist-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px; border-radius: 8px; cursor: pointer;
+      transition: background 0.12s; position: relative;
+    }
+    .hist-item:hover { background: var(--card); }
+
+    .hist-icon { font-size: 13px; width: 16px; text-align: center; flex-shrink: 0; color: var(--dim); }
+    .hist-content { flex: 1; overflow: hidden; }
+    .hist-title { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .hist-url   { font-size: 11px; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px; }
+    .hist-time  { font-size: 11px; color: var(--dim); white-space: nowrap; flex-shrink: 0; }
+    .hist-del {
+      background: none; border: none; color: var(--dim); cursor: pointer;
+      font-size: 11px; width: 20px; height: 20px; border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity 0.15s, background 0.15s; flex-shrink: 0;
+    }
+    .hist-item:hover .hist-del { opacity: 1; }
+    .hist-del:hover { background: var(--danger); color: #fff; }
+
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--dim); }
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <img src="../assets/dingo-mascot.svg" alt="Dingo" />
+  <h1>History</h1>
+</div>
+
+<div class="toolbar">
+  <input class="search-input" id="search" type="text" placeholder="Search history…" autocomplete="off" />
+  <span class="count" id="count"></span>
+  <button class="btn btn-danger" id="btn-clear">Clear All</button>
+</div>
+
+<div id="history-container"></div>
+<div class="empty-state hidden" id="empty-state">
+  <div class="icon">🕐</div>
+  <p>No browsing history</p>
+</div>
+
+<script>
+  const d = window.dingo;
+  let history = [];
+
+  function escHtml(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function formatTime(ts) {
+    const d = new Date(ts);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function dayLabel(ts) {
+    const d = new Date(ts);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const yesterday = today - 86400000;
+    const itemDay = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    if (itemDay === today)     return 'Today';
+    if (itemDay === yesterday) return 'Yesterday';
+    return d.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+  }
+
+  function render(filter = '') {
+    const container = document.getElementById('history-container');
+    const empty = document.getElementById('empty-state');
+    const countEl = document.getElementById('count');
+    container.innerHTML = '';
+
+    const filtered = filter
+      ? history.filter(h => (h.title||h.url).toLowerCase().includes(filter.toLowerCase()) || h.url.toLowerCase().includes(filter.toLowerCase()))
+      : history;
+
+    countEl.textContent = `${filtered.length} item${filtered.length !== 1 ? 's' : ''}`;
+
+    if (filtered.length === 0) { empty.classList.remove('hidden'); return; }
+    empty.classList.add('hidden');
+
+    // Group by day
+    const groups = new Map();
+    filtered.forEach(item => {
+      const label = dayLabel(item.timestamp);
+      if (!groups.has(label)) groups.set(label, []);
+      groups.get(label).push(item);
+    });
+
+    groups.forEach((items, label) => {
+      const section = document.createElement('div');
+      section.className = 'day-group';
+
+      const dayEl = document.createElement('div');
+      dayEl.className = 'day-label';
+      dayEl.textContent = label;
+      section.appendChild(dayEl);
+
+      items.forEach((item, idx) => {
+        const row = document.createElement('div');
+        row.className = 'hist-item';
+        row.innerHTML = `
+          <span class="hist-icon">🌐</span>
+          <div class="hist-content">
+            <div class="hist-title">${escHtml(item.title || item.url)}</div>
+            <div class="hist-url">${escHtml(item.url)}</div>
+          </div>
+          <span class="hist-time">${formatTime(item.timestamp)}</span>
+          <button class="hist-del" title="Remove">✕</button>
+        `;
+        row.addEventListener('click', e => {
+          if (e.target.classList.contains('hist-del')) return;
+          window.location.href = item.url;
+        });
+        row.querySelector('.hist-del').addEventListener('click', () => {
+          const globalIdx = history.indexOf(item);
+          if (globalIdx >= 0) history.splice(globalIdx, 1);
+          render(document.getElementById('search').value);
+          if (d) d.invoke('store:set', { key: 'history', value: history });
+        });
+        section.appendChild(row);
+      });
+
+      container.appendChild(section);
+    });
+  }
+
+  document.getElementById('search').addEventListener('input', e => render(e.target.value));
+
+  document.getElementById('btn-clear').addEventListener('click', async () => {
+    if (!confirm('Clear all browsing history?')) return;
+    if (d) await d.invoke('history:clear', {});
+    history = [];
+    render();
+  });
+
+  async function init() {
+    if (!d) return;
+    history = await d.invoke('history:get', {});
+    render();
+  }
+  init();
+</script>
+</body>
+</html>

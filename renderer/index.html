@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' data: blob:;" />
+  <title>Dingo Browser</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     LEFT SIDEBAR
+     ═══════════════════════════════════════════════════════════ -->
+<aside id="sidebar">
+
+  <!-- Header: mascot + logo + window controls -->
+  <div id="sidebar-header" class="drag-region">
+    <div id="logo" class="no-drag" style="pointer-events:none;">
+      <img id="mascot-img" src="../assets/dingo-mascot.svg" alt="Dingo" />
+      <span class="logo-text">Dingo</span>
+    </div>
+    <div id="win-controls" class="no-drag">
+      <button id="btn-minimize" title="Minimise">─</button>
+      <button id="btn-maximize" title="Maximise">□</button>
+      <button id="btn-close"    title="Close">✕</button>
+    </div>
+  </div>
+
+  <!-- New tab button -->
+  <div id="sidebar-actions" class="no-drag">
+    <button id="btn-new-tab" class="action-btn">
+      <span class="icon">＋</span> New Tab
+    </button>
+  </div>
+
+  <!-- ══ Scrollable sidebar body ══ -->
+  <div id="sidebar-body">
+
+    <!-- ── Open tabs ── -->
+    <section class="sidebar-section">
+      <div class="section-label">OPEN TABS</div>
+      <ul id="open-tabs-list" class="tab-list"></ul>
+    </section>
+
+    <!-- ── Closed / recent tabs ── -->
+    <section class="sidebar-section" id="closed-section" style="display:none">
+      <div class="section-label">
+        RECENTLY CLOSED
+        <button id="btn-clear-closed" class="clear-btn" title="Remove all">✕</button>
+      </div>
+      <ul id="closed-tabs-list" class="tab-list"></ul>
+    </section>
+
+    <!-- ── Project Directories ── -->
+    <section class="sidebar-section" id="projects-section">
+      <div class="section-label">
+        PROJECTS
+        <button id="btn-add-project" class="clear-btn" title="New project folder">＋</button>
+      </div>
+      <div id="projects-tree"></div>
+    </section>
+
+    <!-- ── Bookmarks ── -->
+    <section class="sidebar-section" id="bookmarks-section">
+      <div class="section-label">
+        BOOKMARKS
+        <button id="btn-manage-bookmarks" class="clear-btn" title="Manage">↗</button>
+      </div>
+      <ul id="bookmarks-list" class="tab-list"></ul>
+    </section>
+
+  </div><!-- /sidebar-body -->
+
+  <!-- Footer nav -->
+  <div id="sidebar-footer" class="no-drag">
+    <button class="footer-btn" id="btn-history">   🕐 History</button>
+    <button class="footer-btn" id="btn-downloads">  ⬇ Downloads</button>
+    <button class="footer-btn" id="btn-settings">   ⚙ Settings</button>
+  </div>
+</aside>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MAIN CONTENT AREA
+     ═══════════════════════════════════════════════════════════ -->
+<main id="main">
+
+  <!-- Top toolbar -->
+  <div id="toolbar" class="no-drag">
+    <div class="nav-group">
+      <button id="btn-back"    class="nav-btn" title="Back"    disabled>&#8592;</button>
+      <button id="btn-forward" class="nav-btn" title="Forward" disabled>&#8594;</button>
+      <button id="btn-reload"  class="nav-btn" title="Reload">↻</button>
+    </div>
+
+    <div id="address-bar-wrap">
+      <span id="security-icon" class="sec-icon" title="Connection info">📄</span>
+      <input id="address-bar" type="text" spellcheck="false" autocomplete="off"
+             placeholder="Search or enter address…" aria-label="Address bar" />
+      <button id="btn-bookmark-star" class="icon-btn" title="Bookmark">☆</button>
+    </div>
+
+    <div class="nav-group">
+      <button id="btn-zoom-out" class="icon-btn" title="Zoom out">－</button>
+      <span   id="zoom-label"   class="zoom-label">100%</span>
+      <button id="btn-zoom-in"  class="icon-btn" title="Zoom in">＋</button>
+      <button id="btn-devtools" class="icon-btn" title="DevTools (F12)">⟨/⟩</button>
+    </div>
+  </div>
+
+  <!-- Find bar -->
+  <div id="find-bar" class="hidden">
+    <input id="find-input" type="text" placeholder="Find in page…" />
+    <button id="find-prev"  class="icon-btn">↑</button>
+    <button id="find-next"  class="icon-btn">↓</button>
+    <span   id="find-status" class="find-status"></span>
+    <button id="find-close" class="icon-btn">✕</button>
+  </div>
+
+  <!-- Download tray -->
+  <div id="download-tray" class="hidden">
+    <div id="download-tray-header">
+      Downloads
+      <button id="btn-close-tray" class="icon-btn">✕</button>
+    </div>
+    <ul id="download-list"></ul>
+  </div>
+
+  <!-- Placeholder when no tab is active -->
+  <div id="no-tab-placeholder">
+    <div class="placeholder-inner">
+      <img src="../assets/dingo-mascot.svg" alt="Dingo" class="placeholder-mascot" />
+      <h2>Dingo Browser</h2>
+      <p>Open a new tab to start rocking 🎸</p>
+    </div>
+  </div>
+
+</main>
+
+<!-- ── Project rename dialog ── -->
+<div id="dialog-overlay" class="hidden">
+  <div id="dialog-box">
+    <div id="dialog-title">New Project</div>
+    <input id="dialog-input" type="text" placeholder="Project name…" autocomplete="off" />
+    <div id="dialog-colors">
+      <button class="color-dot" data-color="#7c5cbf" style="background:#7c5cbf" title="Purple"></button>
+      <button class="color-dot" data-color="#2a7fcf" style="background:#2a7fcf" title="Blue"></button>
+      <button class="color-dot" data-color="#2aa350" style="background:#2aa350" title="Green"></button>
+      <button class="color-dot" data-color="#cf7c2a" style="background:#cf7c2a" title="Orange"></button>
+      <button class="color-dot" data-color="#cf2a2a" style="background:#cf2a2a" title="Red"></button>
+      <button class="color-dot" data-color="#888" style="background:#888"       title="Grey"></button>
+    </div>
+    <div id="dialog-actions">
+      <button id="dialog-cancel" class="dialog-btn secondary">Cancel</button>
+      <button id="dialog-ok"     class="dialog-btn primary">Create</button>
+    </div>
+  </div>
+</div>
+
+<script src="browser.js"></script>
+</body>
+</html>
