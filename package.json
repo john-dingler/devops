@@ -8,9 +8,13 @@
     "dev": "electron . --dev",
     "build": "electron-builder",
     "build:linux": "electron-builder --linux",
-    "build:mac": "electron-builder --mac",
+    "build:mac": "electron-builder --mac --arm64",
+    "build:mac-x64": "electron-builder --mac --x64",
+    "build:mac-universal": "electron-builder --mac --universal",
     "build:win": "electron-builder --win",
     "pack": "electron-builder --dir",
+    "pack:mac": "electron-builder --mac --dir --arm64",
+    "icon:generate": "node scripts/generate-icon.js",
     "lint": "eslint ."
   },
   "keywords": ["browser", "chromium", "electron", "dingo"],
@@ -25,6 +29,8 @@
   "build": {
     "appId": "com.dingo.browser",
     "productName": "Dingo Browser",
+    "copyright": "Copyright © 2025 Dingo Browser",
+    "afterSign": "build/notarize.js",
     "directories": {
       "output": "dist"
     },
@@ -42,8 +48,29 @@
       "icon": "assets/icon.png"
     },
     "mac": {
-      "target": "dmg",
-      "icon": "assets/icon.icns"
+      "target": [
+        { "target": "dmg",  "arch": ["arm64", "x64"] },
+        { "target": "zip",  "arch": ["arm64", "x64"] }
+      ],
+      "icon": "assets/icon.png",
+      "category": "public.app-category.utilities",
+      "minimumSystemVersion": "11.0",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "darkModeSupport": true
+    },
+    "dmg": {
+      "title": "Dingo Browser",
+      "icon": "assets/icon.png",
+      "iconSize": 80,
+      "window": { "width": 540, "height": 380 },
+      "contents": [
+        { "x": 150, "y": 185, "type": "file" },
+        { "x": 390, "y": 185, "type": "link", "path": "/Applications" }
+      ],
+      "background": "assets/dmg-background.png"
     },
     "win": {
       "target": "nsis",

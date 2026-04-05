@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!--
+    Required for Electron's V8 JIT compiler under Hardened Runtime.
+    Without these, the app will crash on launch when code signing is active.
+  -->
+  <key>com.apple.security.cs.allow-jit</key>
+  <true/>
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+  <true/>
+  <key>com.apple.security.cs.allow-dyld-environment-variables</key>
+  <true/>
+
+  <!-- Network access for browsing -->
+  <key>com.apple.security.network.client</key>
+  <true/>
+  <key>com.apple.security.network.server</key>
+  <true/>
+
+  <!-- File system access for downloads -->
+  <key>com.apple.security.files.user-selected.read-write</key>
+  <true/>
+  <key>com.apple.security.files.downloads.read-write</key>
+  <true/>
+
+  <!--
+    Disable the App Sandbox so BrowserView / Chromium renderer processes
+    can spawn correctly. Required for Electron browser apps distributed
+    outside the Mac App Store.
+  -->
+  <key>com.apple.security.app-sandbox</key>
+  <false/>
+</dict>
+</plist>
