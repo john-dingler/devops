@@ -38,6 +38,7 @@
       "main.js",
       "preload.js",
       "preload-web.js",
+      "preload-internal.js",
       "renderer/**/*",
       "assets/**/*",
       "node_modules/**/*"
@@ -69,8 +70,7 @@
       "contents": [
         { "x": 150, "y": 185, "type": "file" },
         { "x": 390, "y": 185, "type": "link", "path": "/Applications" }
-      ],
-      "background": "assets/dmg-background.png"
+      ]
     },
     "win": {
       "target": "nsis",

@@ -194,13 +194,23 @@ max-width:480px;text-align:center}h1{color:#d64040;margin-bottom:8px}p{color:#88
 // ---------------------------------------------------------------------------
 function createTab(url, background = false) {
   if (!mainWindow) return null;
-  const tabId = ++tabCounter;
+  const tabId      = ++tabCounter;
+  const resolvedUrl = resolveUrl(url);
+
+  // Internal pages (our local renderer files) get a richer preload that
+  // exposes window.dingo so they can read/write settings, history, etc.
+  // External web pages get the empty sandboxed preload for security.
+  const rendererDir  = path.join(__dirname, 'renderer');
+  const isInternal   = resolvedUrl.startsWith(`file://${rendererDir}`);
+
   const view  = new BrowserView({
     webPreferences: {
-      preload: path.join(__dirname, 'preload-web.js'),
+      preload: isInternal
+        ? path.join(__dirname, 'preload-internal.js')
+        : path.join(__dirname, 'preload-web.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true,
+      sandbox: !isInternal,  // internal pages need require() in preload
     },
   });
 
@@ -257,8 +267,8 @@ function createTab(url, background = false) {
 
   if (!background) activateTab(tabId);
 
-  view.webContents.loadURL(resolveUrl(url));
-  send('tab-created', { tabId, url: resolveUrl(url), active: !background });
+  view.webContents.loadURL(resolvedUrl);
+  send('tab-created', { tabId, url: resolvedUrl, active: !background });
   return tabId;
 }
 
@@ -460,6 +470,7 @@ function registerIpcHandlers() {
   // History
   ipcMain.handle('history:get',   () => getStoreValue('history', []));
   ipcMain.handle('history:clear', () => setStoreValue('history', []));
+  ipcMain.handle('history:add',   (_, { url, title }) => addHistory(url, title));
 
   // Bookmarks
   ipcMain.handle('bookmarks:get',    () => getStoreValue('bookmarks', []));
